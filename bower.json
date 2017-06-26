@@ -1,0 +1,22 @@
+{
+  "name": "jquery.t-800",
+  "homepage": "https://github.com/andresgcarmona/jquery.t-800",
+  "authors": [
+    "Andrés Carmona <ing.andres.carmona@gmail.com>"
+  ],
+  "description": "jQuery form Validator plugin.",
+  "main": "src/jquery.t800.js",
+  "keywords": [
+    "jquery",
+    "form",
+    "validation"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

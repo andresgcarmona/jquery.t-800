@@ -158,8 +158,8 @@
             var $inputs = this.$el.find(this.settings.elements.join(', '));
             $inputs.each(function(index) {
                 var $el = $(this);
-                if($el.attr('class').match('parsely')) {
-                    $inputs[index].rules = self.getRules($el.attr('class'));
+                if($el.data('validation')) {
+                    $inputs[index].rules = self.getRules($el.data('validation'));
                 }
             });
 
@@ -167,12 +167,12 @@
             this.clearErrors();
             return this._do();
         },
-        getRules: function(className) {
+        getRules: function(validations) {
             var rulesObj = {},
                 rules    = [];
             
-            className = className.match(/parsely\[(.*)\]/)[1];
-            rules     = className.match(/[^,\s]([^,]*)[^,\s]*/g);
+            validations = validations.match(/parsely\[(.*)\]/)[1];
+            rules       = validations.match(/[^,\s]([^,]*)[^,\s]*/g);
 
             for(var i = 0, rule = null, len = rules.length; i < len; i+= 1) {
                 if(rules[i].indexOf('[') !== -1) {

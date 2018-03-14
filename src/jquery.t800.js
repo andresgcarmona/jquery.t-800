@@ -1,6 +1,6 @@
 /**
  * A jQuery form validation plugin.
- * 
+ *
  */
 ;(function(factory) {
     'use strict';
@@ -54,7 +54,7 @@
                     mappedValue = callback.call(T, kValue, k, O);
                     A[k] = mappedValue;
                 }
-              
+
                 k++;
             }
 
@@ -73,19 +73,19 @@
             var t   = Object(this);
             var len = t.length >>> 0;
             if(typeof fun !== 'function') {
-              throw new TypeError();
+                throw new TypeError();
             }
 
             var res     = [];
             var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
 
             for(var i = 0; i < len; i++) {
-              if(i in t) {
-                var val = t[i];
-                if(fun.call(thisArg, val, i, t)) {
-                    res.push(val);
+                if(i in t) {
+                    var val = t[i];
+                    if(fun.call(thisArg, val, i, t)) {
+                        res.push(val);
+                    }
                 }
-              }
             }
 
             return res;
@@ -138,6 +138,7 @@
                     ':radio',
                     ':checkbox',
                     'textarea',
+                    'select',
                     'input[type="number"]',
                     'input[type="file"]',
                     'input[type="email"]',
@@ -153,7 +154,7 @@
                 rules: {},
                 emailRE: /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
             };
-        
+
         validator.version     = _VERSION;
         validator.initialized = false;
         validator.settings    = {};
@@ -177,7 +178,7 @@
 
             for(var i = 0, len = inputs.length; i < len; i += 1) {
                 validator.$inputs[inputs[i].id]  = inputs[i];
-                
+
                 $.validator.inputs[inputs[i].id] = {
                     name      : inputs[i].id,
                     hasErrors : false,
@@ -193,7 +194,7 @@
                     validator.validate();
                 });
             }
-            
+
             $.validator.initialized = true;
         };
 
@@ -208,14 +209,14 @@
 
         /**
          * Get rules from data-validation attribute.
-         * 
+         *
          * @param  Array validations Array of validations rules.
          * @return Object validations rules object generated.
          */
         getRules: function(validations) {
             var rulesObj = {},
                 rules    = [];
-            
+
             validations = validations.match(/validator\[(.*)\]/)[1];
             rules       = validations.match(/[^,\s]([^,]*)[^,\s]*/g);
 
@@ -261,19 +262,23 @@
                         rules  = this.rules[r];
 
                     for(var i = 0, len = rules.length; i < len; i += 1) {
-                        var ruleObj   = rules[i];
-                        var rule      = null;
-                        var message   = '';
-                        var validator = null;
-                        var params    = null;
+                        var ruleObj     = rules[i];
+                        var rule        = null;
+                        var message     = '';
+                        var validator   = null;
+                        var params      = null;
+                        var position    = null;
+                        var replacement = null;
 
                         if($.isPlainObject(ruleObj)) {
                             $.each(ruleObj, function(r, v) {
-                                rule      = r;
+                                rule = r;
 
                                 if($.isPlainObject(v)) {
-                                    message   = v.message || '';
-                                    validator = v.validate || null;
+                                    message     = v.message || '';
+                                    validator   = v.validate || null;
+                                    replacement = v.replacement || null;
+                                    position    = v.position || null;
                                 }
                                 else {
                                     params = v;
@@ -288,19 +293,21 @@
                             valid = validate(
                                 $input,
                                 validator,
-                                message || $input.data('required') || $.validator.settings.messages.required
+                                message,
+                                replacement,
+                                position
                             );
                         }
                         else {
                             switch(rule) {
                                 case 'required':
-                                    valid = $input.required(message);
+                                    valid = $input.required(message, params, replacement, position);
                                     break;
                                 case 'email':
-                                    valid = $input.email(message);
+                                    valid = $input.email(message, params, replacement, position);
                                     break;
                                 case 'min':
-                                    valid = $input.validate('min', message, params);
+                                    valid = $input.validate('min', message, params, replacement, position);
                                     break;
                             }
                         }
@@ -340,16 +347,22 @@
                 }
             });
         },
-        required: function(msg) {
+        required: function(msg, params, replacement, position) {
+            console.log(position);
             return validate(
                 this,
                 function(obj) {
+                    if($(obj).attr('type') === 'checkbox' || $(obj).attr('type') === 'radio') {
+                        return $(obj).is(':checked');
+                    }
+
                     return $(obj).val() !== null && !!$(obj).val().length;
                 },
-                msg || $(this).data('required') || $.validator.settings.messages.required
+                msg || $(this).data('required') || $.validator.settings.messages.required,
+                params, replacement, position
             );
         },
-        email: function(msg) {
+        email: function(msg, params, replacement, position) {
             return validate(
                 this,
                 function(obj) {
@@ -359,33 +372,40 @@
 
                     return $(obj).required();
                 },
-                msg || $(this).data('email') || $.validator.settings.messages.email
+                msg || $(this).data('email') || $.validator.settings.messages.email,
+                params, replacement, position
             );
         }
     });
 
-    function validate($obj, validation, message, replacement) {
+    function validate($obj, validation, message, params, replacement, position) {
         if(!$.validator.initialized) $obj.validator();
 
         // Clear previous error messages.
         $('.' + $obj.attr('name') + '.validator.error').remove();
 
         if(!validation($obj)) {
-            throwError($obj, message, replacement);
+            throwError($obj, message, replacement, position);
             return false;
         }
 
         return true;
     }
 
-    function throwError(obj, message, replacement) {
+    function throwError(obj, message, replacement, position) {
         if($.validator.settings.outputMode === 'inline') {
             var $error = $('<li><span class="' + $(obj).attr('name') + ' validator error">' + format(obj, message, replacement) + '</span></li>');
             var $ul    = null;
 
             if($.validator.inputs[$(obj).attr('name')].hasErrors === false) {
                 $ul = $('<ul class="error-list" data-id="' + $(obj).attr('name') + '-errors"></ul>');
-                $(obj).after($ul);
+
+                if(position) {
+                    position.el[position.pos]($ul);
+                }
+                else {
+                    $(obj).after($ul);
+                }
             }
             else {
                 $ul = $('ul.error-list[data-id="' + $(obj).attr('name') + '-errors"]');

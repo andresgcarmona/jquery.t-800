@@ -191,7 +191,9 @@
                 $(element).on('submit', function() {
                     return false;
                 }).on('submit', function() {
-                    validator.validate();
+                    if(validator.validate()) {
+                        this.submit();
+                    }
                 });
             }
 

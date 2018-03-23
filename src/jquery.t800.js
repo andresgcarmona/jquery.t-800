@@ -104,7 +104,7 @@
             return this;
         },
         min: function(msg, params) {
-            return validate(
+            this.valid = validate(
                 $(this),
                 function(obj) {
                     if($(obj).val().trim()) {
@@ -119,6 +119,8 @@
                     min: params
                 }
             );
+
+            return this.valid;
         }
     };
 
@@ -151,6 +153,7 @@
                     email   : 'Email format not valid.',
                     min     : '${field} requires to be at least ${min} characters long'
                 },
+                onBeforeSubmit: function() {},
                 rules: {},
                 emailRE: /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
             };
@@ -192,7 +195,9 @@
                     return false;
                 }).on('submit', function() {
                     if(validator.validate()) {
-                        this.submit();
+                        if($.validator.settings.onBeforeSubmit()) {
+                            this.submit();
+                        }
                     }
                 });
             }
@@ -319,7 +324,7 @@
                             continue;
                         }
                         else {
-                            break;
+                            break;3
                         }
                     }
                 }
@@ -329,7 +334,7 @@
                 }
             }
 
-            return valid;
+            return valid[0] ? valid[0].valid : valid;
         }
     };
 
@@ -350,7 +355,6 @@
             });
         },
         required: function(msg, params, replacement, position) {
-            console.log(position);
             return validate(
                 this,
                 function(obj) {

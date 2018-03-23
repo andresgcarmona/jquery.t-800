@@ -114,6 +114,7 @@
                     return false;
                 },
                 msg || $(this).data('min') || $.validator.settings.messages.min,
+                params,
                 {
                     field: $(this).attr('name'),
                     min: params
@@ -425,7 +426,7 @@
     }
 
     function format(obj, text, replacement) {
-        if(replacement){
+        if(replacement) {
             for(var i in replacement) {
                 var re = new RegExp("\\${(" + i + ")}", 'gi');
 

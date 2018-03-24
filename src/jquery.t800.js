@@ -102,26 +102,6 @@
             this.valid    = validator.validate(options);
 
             return this;
-        },
-        min: function(msg, params) {
-            this.valid = validate(
-                $(this),
-                function(obj) {
-                    if($(obj).val().trim()) {
-                        return $(obj).val().trim().length >= params;
-                    }
-
-                    return false;
-                },
-                msg || $(this).data('min') || $.validator.settings.messages.min,
-                params,
-                {
-                    field: $(this).attr('name'),
-                    min: params
-                }
-            );
-
-            return this.valid;
         }
     };
 
@@ -152,9 +132,12 @@
                 messages:{
                     required: '${field} is required.',
                     email   : 'Email format not valid.',
-                    min     : '${field} requires to be at least ${min} characters long'
+                    min     : '${field} requires to be at least ${min} characters long',
+                    max     : '${field} can not be greater than ${max} characters long'
                 },
-                onBeforeSubmit: function() {},
+                onBeforeSubmit: function() {
+                    return true;
+                },
                 rules: {},
                 emailRE: /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
             };
@@ -247,7 +230,9 @@
             // Rease hasError flag in inputs.
             if($.validator.inputs) {
                 for(var i in $.validator.inputs) {
-                    $.validator.inputs[i].hasErrors = false;
+                    if($.validator.inputs[i].hasErrors) {
+                        $.validator.inputs[i].hasErrors = false;
+                    }
                 }
             }
 
@@ -315,7 +300,10 @@
                                     valid = $input.email(message, params, replacement, position);
                                     break;
                                 case 'min':
-                                    valid = $input.validate('min', message, params, replacement, position);
+                                    valid = $input.min(message, params, replacement, position);
+                                    break;
+                                case 'max':
+                                    valid = $input.max(message, params, replacement, position);
                                     break;
                             }
                         }
@@ -325,7 +313,7 @@
                             continue;
                         }
                         else {
-                            break;3
+                            break;
                         }
                     }
                 }
@@ -382,6 +370,42 @@
                 msg || $(this).data('email') || $.validator.settings.messages.email,
                 params, replacement, position
             );
+        },
+        min: function(msg, params) {
+            return validate(
+                $(this),
+                function(obj) {
+                    if($(obj).val().trim()) {
+                        return $(obj).val().trim().length >= params;
+                    }
+
+                    return false;
+                },
+                msg || $(this).data('min') || $.validator.settings.messages.min,
+                params,
+                {
+                    field: $(this).attr('name'),
+                    min: params
+                }
+            );
+        },
+        max: function(msg, params) {
+            return validate(
+                $(this),
+                function(obj) {
+                    if($(obj).val().trim()) {
+                        return $(obj).val().trim().length <= params;
+                    }
+
+                    return false;
+                },
+                msg || $(this).data('max') || $.validator.settings.messages.max,
+                params,
+                {
+                    field: $(this).attr('name'),
+                    max: params
+                }
+            );
         }
     });
 
@@ -391,7 +415,10 @@
         // Clear previous error messages.
         $('.' + $obj.attr('name') + '.validator.error').remove();
 
-        if(!validation($obj)) {
+        var validity = validation($obj);
+        validity = validity[0] ? validity[0].valid : validity;
+
+        if(!validity) {
             throwError($obj, message, replacement, position);
             return false;
         }
@@ -411,7 +438,12 @@
                     position.el[position.pos]($ul);
                 }
                 else {
-                    $(obj).after($ul);
+                    if($.type(obj) === 'object') {
+                        obj.after($ul);
+                    }
+                    else {
+                        $(obj).after($ul);
+                    }
                 }
             }
             else {
